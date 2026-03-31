@@ -4,7 +4,7 @@ Megent usage example.
 Shows @guard decorator and wrap() for a simple AI agent tool setup.
 """
 import logging
-import megent as mgnt
+import megent.megent as mgnt
 
 # Show audit logs in console
 logging.basicConfig(level=logging.INFO)
