@@ -1,5 +1,5 @@
 dist/
 env/
 __pycache__/
-megent/megent.egg-info/
+megent.egg-info/
 megent/__pycache__/
