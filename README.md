@@ -105,7 +105,7 @@ Agents without a valid passport are blocked before any tool executes.
 ## Audit Logs
 
 Every tool call produces a structured log entry:
-
+```json
 {
   "timestamp": "2026-03-31T10:22:01Z",
   "agent_id": "sales-assistant-v1",
@@ -114,7 +114,7 @@ Every tool call produces a structured log entry:
   "args": { "path": "/reports/q1.pdf" },
   "policy": "policies/agent.yaml",
   "rule_matched": "read_file/path_prefix"
-}
+}``
 ---
 
 
