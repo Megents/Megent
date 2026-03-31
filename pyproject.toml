@@ -35,8 +35,8 @@ dev = [
 
 [project.urls]
 Homepage = "https://megent.dev"
-Repository = "https://github.com/getmagent/megent"
-Documentation = "https://megent.dev/docs"
+Repository = "https://github.com/magents/megent"
+Documentation = "https://megent.dev/doc "
 
 [tool.setuptools.packages.find]
 include = ["megent*"]
