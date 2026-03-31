@@ -1,0 +1,22 @@
+version: "1"
+default_action: deny
+
+pii_mask:
+  - email
+  - phone
+  - ssn
+
+tools:
+  send_email:
+    allow: true
+    pii_mask:
+      - credit_card
+
+  read_file:
+    allow: true
+
+  execute_sql:
+    allow: true
+
+  delete_record:
+    allow: true
