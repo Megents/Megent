@@ -3,3 +3,4 @@ env/
 __pycache__/
 megent.egg-info/
 megent/__pycache__/
+/megent.yaml
