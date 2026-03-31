@@ -1,0 +1,31 @@
+Metadata-Version: 2.4
+Name: megent
+Version: 0.1.0
+Summary: AI agent security middleware — policy-enforced tool call interception
+License-Expression: MIT
+Project-URL: Homepage, https://megent.dev
+Project-URL: Repository, https://github.com/getmagent/megent
+Project-URL: Documentation, https://megent.dev/docs
+Keywords: ai,agents,security,policy,llm
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Security
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pyyaml>=6.0
+Provides-Extra: jwt
+Requires-Dist: pyjwt>=2.8; extra == "jwt"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: pyjwt>=2.8; extra == "dev"
+Requires-Dist: pyyaml>=6.0; extra == "dev"
+Dynamic: license-file
+
+﻿# Megent-web
+
