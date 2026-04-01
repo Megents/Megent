@@ -86,7 +86,10 @@ class RegistryClient:
 
     def install(self, name: str, version: str = "latest", verify: bool = True) -> PolicyPack:
         pack, policy_yaml = self._fetch_with_yaml(name=name, version=version)
-        if verify and not self.verify_signature(pack, policy_yaml=policy_yaml):
+        is_verified = False
+        if verify:
+            is_verified = self.verify_signature(pack, policy_yaml=policy_yaml)
+        if verify and not is_verified:
             raise PolicyVerificationError(f"Signature verification failed for policy '{name}'")
 
         target_dir = self.policies_dir / pack.name
@@ -99,7 +102,7 @@ class RegistryClient:
             "publisher": pack.publisher,
             "signature": pack.signature,
             "public_key": pack.public_key,
-            "verified": bool(verify and self.verify_signature(pack, policy_yaml=policy_yaml)),
+            "verified": bool(is_verified),
         }
         (target_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         verified_file = target_dir / "verified"

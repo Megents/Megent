@@ -35,20 +35,23 @@ def _registry_payload(name: str, version: str = "1.2.0") -> tuple[dict[str, str]
     return payload, policy_yaml
 
 
+class _FakeResponse:
+    def __init__(self, payload: dict[str, str]):
+        self._payload = payload
+
+    def __enter__(self):  # type: ignore[no-untyped-def]
+        return self
+
+    def __exit__(self, exc_type, exc, tb):  # type: ignore[no-untyped-def]
+        return False
+
+    def read(self) -> bytes:
+        return json.dumps(self._payload).encode("utf-8")
+
+
 def test_install_list_and_lockfile_updates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     payload, _ = _registry_payload("stripe")
-
-    class FakeResponse:
-        def __enter__(self):  # type: ignore[no-untyped-def]
-            return self
-
-        def __exit__(self, exc_type, exc, tb):  # type: ignore[no-untyped-def]
-            return False
-
-        def read(self) -> bytes:
-            return json.dumps(payload).encode("utf-8")
-
-    monkeypatch.setattr("urllib.request.urlopen", lambda url: FakeResponse())
+    monkeypatch.setattr("urllib.request.urlopen", lambda url: _FakeResponse(payload))
     client = RegistryClient(policy_home=tmp_path / ".megent")
 
     pack = client.install("stripe", version="1.2.0")
@@ -90,18 +93,7 @@ def test_named_policy_resolution_requires_verified(tmp_path: Path, monkeypatch: 
 
 def test_cli_policy_verify_exit_codes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     payload, _ = _registry_payload("stripe")
-
-    class FakeResponse:
-        def __enter__(self):  # type: ignore[no-untyped-def]
-            return self
-
-        def __exit__(self, exc_type, exc, tb):  # type: ignore[no-untyped-def]
-            return False
-
-        def read(self) -> bytes:
-            return json.dumps(payload).encode("utf-8")
-
-    monkeypatch.setattr("urllib.request.urlopen", lambda url: FakeResponse())
+    monkeypatch.setattr("urllib.request.urlopen", lambda url: _FakeResponse(payload))
     fake_home = tmp_path / "home"
     monkeypatch.setattr("pathlib.Path.home", lambda: fake_home)
 

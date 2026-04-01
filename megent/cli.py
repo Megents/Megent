@@ -4,7 +4,6 @@ import argparse
 import json
 from typing import Sequence
 
-from .exceptions import PolicyInstallError, PolicyVerificationError
 from .registry import RegistryClient
 
 
@@ -80,7 +79,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(json.dumps(payload, indent=2))
         return 0
 
-    raise PolicyInstallError(f"Unknown policy command: {args.policy_command}")
+    return 1
 
 
 if __name__ == "__main__":  # pragma: no cover
