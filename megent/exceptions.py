@@ -15,5 +15,17 @@ class PolicyLoadError(MegentError):
     """Raised when a policy file cannot be loaded or parsed."""
 
 
+class PolicyNotFoundError(MegentError):
+    """Raised when a named policy pack is not installed."""
+
+
+class PolicyInstallError(MegentError):
+    """Raised when a policy pack cannot be fetched or installed."""
+
+
+class PolicyVerificationError(MegentError):
+    """Raised when policy signature verification fails."""
+
+
 class IdentityError(MegentError):
     """Raised when agent identity cannot be verified."""

@@ -5,11 +5,20 @@ Policy-enforced tool call interception for AI agents.
 """
 
 from .audit import AuditLogger, AuditEvent
-from .exceptions import MegentError, PolicyViolation, PolicyLoadError, IdentityError
+from .exceptions import (
+    MegentError,
+    PolicyViolation,
+    PolicyLoadError,
+    IdentityError,
+    PolicyInstallError,
+    PolicyNotFoundError,
+    PolicyVerificationError,
+)
 from .guard import configure, guard, wrap
 from .identity import verify_agent_token, agent_id_from_token
 from .pii import mask_args
 from .policy import Policy, ToolPolicy, load_policy
+from .registry import PolicyPack, RegistryClient
 from .runtime import Runtime
 
 __all__ = [
@@ -35,7 +44,13 @@ __all__ = [
     "MegentError",
     "PolicyViolation",
     "PolicyLoadError",
+    "PolicyInstallError",
+    "PolicyNotFoundError",
+    "PolicyVerificationError",
     "IdentityError",
+    # Registry
+    "PolicyPack",
+    "RegistryClient",
 ]
 
 __version__ = "0.1.2"

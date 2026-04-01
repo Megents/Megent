@@ -65,6 +65,30 @@ rules:
     allow: false  # deny-by-default
 ---
 
+## Policy Registry CLI
+
+Install and manage policy packs:
+
+```bash
+megent policy install stripe
+megent policy list
+megent policy info stripe
+megent policy verify stripe
+megent policy remove stripe
+```
+
+You can also reference installed packs by name:
+
+```python
+import megent as mgnt
+
+@mgnt.guard(policy="stripe")
+def billing_agent(prompt: str):
+    ...
+```
+
+---
+
 
 ## How It Works
 

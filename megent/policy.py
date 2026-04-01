@@ -10,7 +10,7 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise ImportError("Install PyYAML: pip install pyyaml") from exc
 
-from .exceptions import PolicyLoadError
+from .exceptions import PolicyLoadError, PolicyVerificationError
 
 
 @dataclass
@@ -64,11 +64,13 @@ def load_policy(path: Optional[str] = None) -> Policy:
       2. MEGENT_POLICY env var
       3. ./megent.yaml in the current working directory
     """
-    resolved = (
-        path
-        or os.environ.get("MEGENT_POLICY")
-        or str(Path.cwd() / "megent.yaml")
-    )
+    requested = path or os.environ.get("MEGENT_POLICY")
+    resolved = requested or str(Path.cwd() / "megent.yaml")
+
+    if requested and not Path(requested).exists():
+        named_pack = _resolve_named_policy(requested)
+        if named_pack is not None:
+            resolved = str(named_pack)
 
     try:
         with open(resolved, "r") as f:
@@ -87,3 +89,20 @@ def load_policy(path: Optional[str] = None) -> Policy:
         tools=tools,
         pii_mask=raw.get("pii_mask", []),
     )
+
+
+def _resolve_named_policy(name: str) -> Optional[Path]:
+    if "/" in name or name.endswith(".yaml") or name.endswith(".yml"):
+        return None
+
+    policy_dir = Path.home() / ".megent" / "policies" / name
+    policy_path = policy_dir / "policy.yaml"
+    manifest_path = policy_dir / "manifest.json"
+    verified_path = policy_dir / "verified"
+    if not policy_path.exists():
+        return None
+    if not verified_path.exists():
+        raise PolicyVerificationError(f"Named policy '{name}' is not verified")
+    if not manifest_path.exists():
+        raise PolicyLoadError(f"Named policy '{name}' has no manifest")
+    return policy_path

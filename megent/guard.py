@@ -49,6 +49,7 @@ def guard(
     *,
     tool_name: Optional[str] = None,
     agent_token: Optional[str] = None,
+    policy: Optional[str] = None,
     runtime: Optional[Runtime] = None,
 ) -> Callable[[F], F]: ...
 
@@ -58,6 +59,7 @@ def guard(
     *,
     tool_name: Optional[str] = None,
     agent_token: Optional[str] = None,
+    policy: Optional[str] = None,
     runtime: Optional[Runtime] = None,
 ) -> Any:
     """
@@ -72,7 +74,7 @@ def guard(
         def send_email(...): ...
     """
     def decorator(func: F) -> F:
-        rt = runtime or _get_runtime()
+        rt = runtime or (Runtime(policy_path=policy) if policy else _get_runtime())
         name = tool_name or func.__name__
 
         @functools.wraps(func)
@@ -99,6 +101,7 @@ def wrap(
     *,
     tool_name: Optional[str] = None,
     agent_token: Optional[str] = None,
+    policy: Optional[str] = None,
     runtime: Optional[Runtime] = None,
 ) -> Callable[..., Any]:
     """
@@ -110,5 +113,5 @@ def wrap(
         safe_execute = mgnt.wrap(third_party_agent.execute_sql)
         safe_execute(query="SELECT * FROM users")
     """
-    rt = runtime or _get_runtime()
+    rt = runtime or (Runtime(policy_path=policy) if policy else _get_runtime())
     return rt.wrap_callable(fn, tool_name=tool_name, agent_token=agent_token)
