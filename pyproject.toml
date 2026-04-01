@@ -21,12 +21,14 @@ classifiers = [
 ]
 
 dependencies = [
+    "cryptography>=42.0",
     "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
 jwt = ["pyjwt>=2.8"]
 dev = [
+    "cryptography>=42.0",
     "pytest>=8.0",
     "pytest-cov",
     "pyjwt>=2.8",
@@ -37,6 +39,9 @@ dev = [
 Homepage = "https://megent.dev"
 Repository = "https://github.com/magents/megent"
 Documentation = "https://megent.dev/doc "
+
+[project.scripts]
+megent = "megent.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["megent*"]

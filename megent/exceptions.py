@@ -17,3 +17,19 @@ class PolicyLoadError(MegentError):
 
 class IdentityError(MegentError):
     """Raised when agent identity cannot be verified."""
+
+
+class RegistryError(MegentError):
+    """Base exception for registry client errors."""
+
+
+class RegistryFetchError(RegistryError):
+    """Raised when a policy pack cannot be fetched from a registry."""
+
+
+class RegistryVerificationError(RegistryError):
+    """Raised when signature verification fails for a policy pack."""
+
+
+class RegistryInstallError(RegistryError):
+    """Raised when a verified policy pack cannot be installed locally."""
