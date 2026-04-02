@@ -15,9 +15,8 @@
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://pypi.org/project/megent/)
 [![PyPI](https://img.shields.io/pypi/v/megent)](https://pypi.org/project/megent/)
 [![Status](https://img.shields.io/badge/status-beta-orange)](https://megent.dev)
-[![Discord](https://img.shields.io/badge/discord-join-7289da)](https://discord.gg/megent)
 
-[**Docs**](https://megent.dev/docs) · [**Demo**](https://megent.dev/demo) · [**Discord**](https://discord.gg/megent) · [**Blog**](https://megent.dev/blog)
+[**Docs**](https://megent.dev/docs) · [**Demo**](https://megent.dev/demo) · [**Blog**](https://megent.dev/blog)
 
 </div>
 
@@ -177,39 +176,37 @@ Pipe to any SIEM. Query with any log tool.
 
 ---
 
-## Integrations
+## Framework-agnostic
 
-| Framework | Status |
-|-----------|--------|
-| LangChain | ✅ Supported |
-| CrewAI | ✅ Supported |
-| OpenAI Agents SDK | ✅ Supported |
-| AutoGen | 🔜 Coming soon |
-| LlamaIndex | 🔜 Coming soon |
+Megent is not a plugin for LangChain, CrewAI, or any other framework. It is an independent security layer.
 
-### LangChain
+You build your agent on whatever platform you want. Megent wraps it.
 
-```python
-from megent.integrations.langchain import MegentCallbackHandler
-
-agent = initialize_agent(
-    tools=tools,
-    llm=llm,
-    callbacks=[MegentCallbackHandler(policy="policies/agent.yaml")]
-)
+```
+┌──────────────────────────────────────┐
+│              MEGENT                  │  ← security layer (this is us)
+│  ┌────────────────────────────────┐  │
+│  │   your agent (LangChain,       │  │  ← built on any framework
+│  │   CrewAI, OpenAI Agents SDK,   │  │
+│  │   raw Python, anything)        │  │
+│  └────────────────────────────────┘  │
+└──────────────────────────────────────┘
 ```
 
-### CrewAI
+Megent doesn't know or care what your agent is built on. It intercepts tool calls at the boundary — before execution — regardless of the underlying platform.
 
 ```python
-from megent.integrations.crewai import MegentGuard
+# agent built on LangChain? wrap it.
+safe_agent = mgnt.wrap(langchain_agent, policy="policies/agent.yaml")
 
-crew = Crew(
-    agents=[researcher, writer],
-    tasks=[research_task, write_task],
-    process=MegentGuard(policy="policies/agent.yaml")
-)
+# agent built on CrewAI? wrap it.
+safe_agent = mgnt.wrap(crew, policy="policies/agent.yaml")
+
+# raw Python agent? same thing.
+safe_agent = mgnt.wrap(my_agent, policy="policies/agent.yaml")
 ```
+
+The platforms (LangChain, CrewAI, OpenAI Agents SDK, AutoGen, LlamaIndex) are where agents are **built**. Megent is where they are **secured**. These are separate concerns.
 
 ---
 
