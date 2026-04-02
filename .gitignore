@@ -4,3 +4,8 @@ __pycache__/
 megent.egg-info/
 megent/__pycache__/
 /megent.yaml
+megent/.pytest_cache
+.github
+.docs
+megent/tests/__pycache__
+megent/megent/__pycache__
