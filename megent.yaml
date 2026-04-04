@@ -19,4 +19,4 @@ tools:
     allow: true
 
   delete_record:
-    allow: true
+    allow: false
