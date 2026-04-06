@@ -7,7 +7,12 @@ Run steps:
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+
+# When run as `python example/megent_simple.py`, Python only adds `example/`
+# to sys.path, so we insert the project root first to load the local package.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import megent as mg
 from megent.audit import AuditEvent, AuditLogger
