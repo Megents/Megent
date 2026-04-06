@@ -5,11 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "megent"
 version = "0.1.4"
-description = "AI agent security middleware — policy-enforced tool call interception"
+description = "Open-source AI agent security middleware for policy-enforced tool calls, prompt injection defense, and PII masking"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
-keywords = ["ai", "agents", "security", "policy", "llm"]
+keywords = [
+    "ai",
+    "agent-security",
+    "llm-security",
+    "policy-enforcement",
+    "prompt-injection",
+    "tool-security",
+    "pii-masking",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -37,7 +45,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://megent.dev"
-Repository = "https://github.com/magents/megent"
+Repository = "https://github.com/Megents/Megent"
 Documentation = "https://megent.dev/docs"
 
 [project.scripts]

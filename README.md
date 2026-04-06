@@ -11,14 +11,21 @@
 
 **A zero-trust safety layer for AI agents. Wrap tools fast. Ship with confidence.**
 
+Open-source AI agent security middleware for policy-enforced tool calls, prompt injection resistance, and PII masking.
+
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://pypi.org/project/megent/)
 [![PyPI](https://img.shields.io/pypi/v/megent)](https://pypi.org/project/megent/)
-[![Status](https://img.shields.io/badge/status-beta-orange)](https://megent.dev)
+[![Status](https://img.shields.io/badge/status-stable-brightgreen)](https://megent.dev)
 
-[**Docs**](https://megent.dev/docs) · [**Demo**](https://megent.dev/demo) · [**Blog**](https://megent.dev/blog)
-
+[**Docs**](https://docs.megent.dev) · [**Polices**](https://megent.dev/registry)
 </div>
+
+---
+
+# Megent: Open-Source AI Agent Security Middleware
+
+Megent helps secure AI agents by enforcing allow/deny tool policies, masking sensitive data, and logging every tool decision.
 
 ---
 
@@ -69,6 +76,38 @@ Megent sits between your agent and its tools, running every call through three p
 ```bash
 pip install megent
 ```
+
+---
+
+## 60-Second Setup (Simple)
+
+1. Create a `megent.yaml` file in your project root:
+
+```yaml
+version: "1"
+default_action: deny
+
+tools:
+  send_email:
+    allow: true
+    pii_mask: [email, phone]
+```
+
+2. Wrap your function with Megent:
+
+```python
+import megent as mg
+
+mg.configure(policy_path="megent.yaml")
+
+@mg.guard
+def send_email(to: str, body: str) -> str:
+    return "sent"
+
+send_email("ops@example.com", "Call me at +1 555 111 2222")
+```
+
+3. Done. Calls are now policy-checked and sensitive fields are masked.
 
 ---
 
