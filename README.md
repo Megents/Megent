@@ -79,7 +79,9 @@ pip install megent
 
 ---
 
-## 60-Second Setup (Simple)
+## Super Simple Setup (3 Steps)
+
+No framework migration. No plugin boilerplate. Just one policy file and one decorator.
 
 1. Create a `megent.yaml` file in your project root:
 
@@ -93,7 +95,7 @@ tools:
     pii_mask: [email, phone]
 ```
 
-2. Wrap your function with Megent:
+2. Add Megent to your function:
 
 ```python
 import megent as mg
@@ -107,7 +109,7 @@ def send_email(to: str, body: str) -> str:
 send_email("ops@example.com", "Call me at +1 555 111 2222")
 ```
 
-3. Done. Calls are now policy-checked and sensitive fields are masked.
+3. Run your app. Calls are now policy-checked, and sensitive fields are masked automatically.
 
 ---
 
