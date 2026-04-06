@@ -7,12 +7,9 @@ pii_mask:
   - ssn
 
 tools:
-  send_email:
+  get_weather:
     allow: true
-    pii_mask:
-      - credit_card
-
-  read_file:
+  multiply:
     allow: true
 
   execute_sql:

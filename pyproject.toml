@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "megent"
-version = "0.1.3"
+version = "0.1.4"
 description = "AI agent security middleware — policy-enforced tool call interception"
 readme = "README.md"
 requires-python = ">=3.10"

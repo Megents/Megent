@@ -9,3 +9,4 @@ megent/.pytest_cache
 .docs
 megent/tests/__pycache__
 megent/megent/__pycache__
+megent.egg-info
