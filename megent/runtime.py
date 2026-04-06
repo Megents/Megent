@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+import inspect
 from typing import Any, Callable, Optional
 
 from .audit import AuditLogger
@@ -75,11 +77,17 @@ class Runtime:
     ) -> Callable[..., Any]:
         """Return a new callable that enforces policy before calling fn."""
         name = tool_name or fn.__name__
+        # Bind against the original signature so positional/keyword calls stay equivalent.
+        signature = inspect.signature(fn)
 
-        def _wrapper(**kwargs: Any) -> Any:
-            safe_kwargs = self.enforce(name, kwargs, agent_token)
-            return fn(**safe_kwargs)
+        @functools.wraps(fn)
+        def _wrapper(*args: Any, **kwargs: Any) -> Any:
+            bound_args = signature.bind(*args, **kwargs)
+            safe_values = self.enforce(name, dict(bound_args.arguments), agent_token)
 
-        _wrapper.__name__ = fn.__name__
-        _wrapper.__doc__ = fn.__doc__
+            # Rebuild args from the sanitized mapping and preserve call semantics.
+            bound_args.arguments.clear()
+            bound_args.arguments.update(safe_values)
+            return fn(*bound_args.args, **bound_args.kwargs)
+
         return _wrapper

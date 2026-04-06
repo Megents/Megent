@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 from typing import Any, Callable, Optional, TypeVar, overload
 
 from .runtime import Runtime
@@ -74,13 +73,9 @@ def guard(
     def decorator(func: F) -> F:
         rt = runtime or _get_runtime()
         name = tool_name or func.__name__
-
-        @functools.wraps(func)
-        def wrapper(**kwargs: Any) -> Any:
-            safe_kwargs = rt.enforce(name, kwargs, agent_token)
-            return func(**safe_kwargs)
-
-        return wrapper  # type: ignore[return-value]
+        # Delegate wrapping to Runtime so guard() and wrap() share identical behavior.
+        wrapped = rt.wrap_callable(func, tool_name=name, agent_token=agent_token)
+        return wrapped  # type: ignore[return-value]
 
     if fn is not None:
         # Called as @guard (no parentheses)

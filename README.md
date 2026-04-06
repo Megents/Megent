@@ -9,10 +9,10 @@
 ╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   
 ```
 
-**Security middleware for AI agents. One decorator. Zero blind spots.**
+**A zero-trust safety layer for AI agents. Wrap tools fast. Ship with confidence.**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://pypi.org/project/megent/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://pypi.org/project/megent/)
 [![PyPI](https://img.shields.io/pypi/v/megent)](https://pypi.org/project/megent/)
 [![Status](https://img.shields.io/badge/status-beta-orange)](https://megent.dev)
 
@@ -34,7 +34,9 @@ agent.http_post("https://...")          ← looks fine
 # combined? that's data exfiltration.
 ```
 
-Traditional security tools inspect calls one by one. **Megent watches the sequence.**
+Traditional security tools inspect calls one by one. **Megent enforces policy at execution time.**
+
+Built for teams that want speed without security debt.
 
 ---
 
@@ -75,25 +77,36 @@ pip install megent
 ### Drop-in decorator
 
 ```python
-import mgnt
+import megent as mg
 
-@mgnt.guard(policy="policies/agent.yaml")
-def run_agent():
-    agent.run("Summarize the latest reports and email them to the team.")
+mg.configure(policy_path="policies/agent.yaml")
+
+@mg.guard
+def send_email(to: str, subject: str, body: str) -> str:
+  # your tool implementation
+  return "sent"
+
+send_email(
+  to="ops@example.com",
+  subject="Daily summary",
+  body="Contact me at jane.doe@example.com",
+)
 ```
 
 ### Wrap an existing agent
 
 ```python
-import mgnt
+import megent as mg
 
-safe_agent = mgnt.wrap(
-    agent,
-    policy="policies/agent.yaml",
-    identity="reports-agent-v2"
+runtime = mg.Runtime(policy_path="policies/agent.yaml")
+
+safe_execute = mg.wrap(
+  third_party_agent.execute,
+  runtime=runtime,
+  tool_name="agent_execute",
 )
 
-safe_agent.run("Summarize the latest reports and email them.")
+safe_execute(task="Summarize latest reports")
 ```
 
 That's it. Megent intercepts every tool call, evaluates it against your policy, and either allows, denies, or modifies it — all without changing your agent code.
@@ -107,52 +120,38 @@ Policies are plain YAML. No DSL to learn.
 ```yaml
 # policies/agent.yaml
 version: "1"
-default: deny                        # deny-by-default
+default_action: deny
+pii_mask: [email]
 
-rules:
-  - name: block_data_exfiltration
-    description: Detect read → search → post sequences
-    sequence:
-      - tool: file_read
-        match: { path: "/etc/*" }
-      - tool: web_search
-        within: 5                    # within 5 calls
-      - tool: http_post
-        within: 3
-    action: deny
-    alert: true
+tools:
+  read_file:
+    allow: true
 
-  - name: mask_pii_in_emails
-    tool: send_email
-    transform:
-      body:
-        - mask: email
-        - mask: phone
-        - mask: ssn
-    action: allow
+  send_email:
+    allow: true
+    pii_mask: [email, phone, ssn]
 
-  - name: allow_approved_tools
-    tools: [web_search, read_file, send_slack_message]
-    action: allow
+  delete_all_data:
+    allow: false
 ```
 
 ---
 
-## AgentPassport
+## Agent Identity (JWT)
 
-Every agent gets a cryptographic identity. Every call is attributed.
+Megent can attribute calls to an agent identity using a JWT (HS256).
+Set `MEGENT_JWT_SECRET` (or pass `secret=` to `verify_agent_token`) and
+include `agent_id` (or `sub`) in the token claims.
 
 ```python
-passport = mgnt.AgentPassport(
-    agent_id="reports-agent-v2",
-    permissions=["file_read", "web_search", "send_email"],
-    ttl=3600
-)
+import megent as mg
 
-safe_agent = mgnt.wrap(agent, passport=passport)
+runtime = mg.Runtime(policy_path="policies/agent.yaml")
+token = "<jwt-from-your-auth-system>"
+
+safe_send = mg.wrap(send_email, runtime=runtime, tool_name="send_email", agent_token=token)
+safe_send(to="ops@example.com", subject="Ping", body="hello")
 ```
-
-AgentPassport issues a signed JWT per session. Any call made outside the declared permissions is denied — even if the policy file would otherwise allow it.
 
 ---
 
@@ -162,13 +161,14 @@ Every decision is logged in structured JSON.
 
 ```json
 {
-  "ts": "2025-11-12T14:23:01Z",
-  "agent": "reports-agent-v2",
+  "event": "allow",
   "tool": "http_post",
-  "sequence": ["file_read", "web_search", "http_post"],
-  "rule_triggered": "block_data_exfiltration",
-  "action": "deny",
-  "payload_hash": "sha256:e3b0c4..."
+  "agent_id": "reports-agent-v2",
+  "timestamp": 1767945230.137,
+  "args": {
+    "body": "[REDACTED]"
+  },
+  "masked_fields": ["email"]
 }
 ```
 
@@ -196,14 +196,16 @@ You build your agent on whatever platform you want. Megent wraps it.
 Megent doesn't know or care what your agent is built on. It intercepts tool calls at the boundary — before execution — regardless of the underlying platform.
 
 ```python
+import megent as mg
+
 # agent built on LangChain? wrap it.
-safe_agent = mgnt.wrap(langchain_agent, policy="policies/agent.yaml")
+safe_agent = mg.wrap(langchain_agent.invoke, runtime=mg.Runtime(policy_path="policies/agent.yaml"))
 
 # agent built on CrewAI? wrap it.
-safe_agent = mgnt.wrap(crew, policy="policies/agent.yaml")
+safe_agent = mg.wrap(crew.kickoff, runtime=mg.Runtime(policy_path="policies/agent.yaml"))
 
 # raw Python agent? same thing.
-safe_agent = mgnt.wrap(my_agent, policy="policies/agent.yaml")
+safe_agent = mg.wrap(my_agent.run, runtime=mg.Runtime(policy_path="policies/agent.yaml"))
 ```
 
 The platforms (LangChain, CrewAI, OpenAI Agents SDK, AutoGen, LlamaIndex) are where agents are **built**. Megent is where they are **secured**. These are separate concerns.
@@ -214,11 +216,11 @@ The platforms (LangChain, CrewAI, OpenAI Agents SDK, AutoGen, LlamaIndex) are wh
 
 | Attack | Megent Defense |
 |--------|---------------|
-| Tool call injection | Intercept layer validates call structure |
-| Context poisoning | Context window detects anomalous drift |
-| Prompt injection → privilege escalation | Sequence analysis flags lateral movement |
-| PII leakage | Transform rules mask before execution |
-| Shadow tool calls | Deny-by-default blocks undeclared tools |
+| Unauthorized tool calls | Per-tool allow/deny policy enforcement |
+| Unknown-by-default execution | `default_action: deny` for explicit allowlists |
+| PII leakage in arguments | Configurable regex masking (`pii_mask`) |
+| Unattributed execution | Optional JWT-based `agent_id` attribution |
+| Weak observability | Structured audit events via standard logging |
 
 ---
 ---
@@ -227,7 +229,7 @@ The platforms (LangChain, CrewAI, OpenAI Agents SDK, AutoGen, LlamaIndex) are wh
 Megent is Apache 2.0 licensed and open to contributions.
 
 ```bash
-git clone https://github.com/getmegent/megent
+git clone https://github.com/Megents/Megent.git
 cd megent
 pip install -e ".[dev]"
 pytest

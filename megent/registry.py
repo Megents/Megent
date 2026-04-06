@@ -4,13 +4,14 @@ import base64
 import hashlib
 import json
 import os
+import re
 import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Optional
-from urllib.parse import urlencode, urljoin
+from urllib.parse import quote, urlencode, urljoin, urlparse
 from urllib.request import urlopen
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -22,6 +23,11 @@ from .exceptions import (
     RegistryInstallError,
     RegistryVerificationError,
 )
+
+# Restrict transport to explicit web schemes to avoid local/file fetch surprises.
+_ALLOWED_REGISTRY_SCHEMES = {"http", "https"}
+# Keep pack names URL-safe and path-traversal resistant.
+_POLICY_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
 def _utc_now_iso() -> str:
@@ -87,11 +93,45 @@ class RegistryClient:
         timeout_seconds: float = 10.0,
     ):
         """Initialize a registry client with local install and lockfile paths."""
-        self._registry_url = registry_url.rstrip("/") + "/"
+        self._registry_url = self._normalize_registry_url(registry_url)
         home = Path.home()
         self._policies_dir = policies_dir or (home / ".megent" / "policies")
         self._lockfile_path = lockfile_path or (Path.cwd() / "megent.lock")
         self._timeout_seconds = timeout_seconds
+
+    @staticmethod
+    def _normalize_registry_url(registry_url: str) -> str:
+        # Canonicalize base URL once and enforce trusted endpoint shape up front.
+        normalized = registry_url.rstrip("/") + "/"
+        parsed = urlparse(normalized)
+        if parsed.scheme not in _ALLOWED_REGISTRY_SCHEMES or not parsed.netloc:
+            raise RegistryFetchError(
+                "Registry URL must use http(s) with a valid host "
+                f"(received: {registry_url!r})"
+            )
+        return normalized
+
+    @staticmethod
+    def _validate_policy_name(name: str) -> str:
+        # Names become URL path segments, so reject anything outside safe characters.
+        if not _POLICY_NAME_RE.fullmatch(name):
+            raise RegistryFetchError(
+                "Policy pack name contains unsupported characters; use letters, "
+                "numbers, dots, underscores, or dashes."
+            )
+        return name
+
+    def _build_policy_endpoint(self, name: str, version: Optional[str]) -> str:
+        # Encode the pack name before joining so special characters cannot alter path layout.
+        safe_name = quote(self._validate_policy_name(name), safe="")
+        endpoint = urljoin(self._registry_url, f"policies/{safe_name}")
+        if version:
+            endpoint = f"{endpoint}?{urlencode({'version': version})}"
+
+        parsed = urlparse(endpoint)
+        if parsed.scheme not in _ALLOWED_REGISTRY_SCHEMES or not parsed.netloc:
+            raise RegistryFetchError(f"Resolved registry endpoint is invalid: {endpoint!r}")
+        return endpoint
 
     @property
     def policies_dir(self) -> Path:
@@ -105,12 +145,11 @@ class RegistryClient:
 
     def fetch(self, name: str, version: Optional[str] = None) -> PolicyPack:
         """Fetch a policy pack payload from the configured registry endpoint."""
-        endpoint = urljoin(self._registry_url, f"policies/{name}")
-        if version:
-            endpoint = f"{endpoint}?{urlencode({'version': version})}"
+        endpoint = self._build_policy_endpoint(name=name, version=version)
 
         try:
-            with urlopen(endpoint, timeout=self._timeout_seconds) as response:
+            # Endpoint scheme/host are validated above before network access.
+            with urlopen(endpoint, timeout=self._timeout_seconds) as response:  # nosec B310
                 payload = json.load(response)
         except Exception as exc:  # noqa: BLE001
             raise RegistryFetchError(f"Failed to fetch policy pack '{name}': {exc}") from exc
@@ -120,11 +159,14 @@ class RegistryClient:
             fetched_version = str(payload.get("version") or version or "latest")
             policy_yaml = str(payload["policy_yaml"])
             manifest = payload.get("manifest") or {}
+            if not isinstance(manifest, dict):
+                raise ValueError("manifest must be an object")
             signature_b64 = payload["signature"]
             public_key_b64 = payload["public_key"]
 
-            signature = base64.b64decode(signature_b64)
-            public_key = base64.b64decode(public_key_b64)
+            # validate=True rejects non-base64 garbage early instead of silently truncating.
+            signature = base64.b64decode(signature_b64, validate=True)
+            public_key = base64.b64decode(public_key_b64, validate=True)
         except Exception as exc:  # noqa: BLE001
             raise RegistryFetchError(
                 f"Registry response for '{name}' is missing required fields"

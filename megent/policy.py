@@ -48,11 +48,31 @@ def _parse_tool(name: str, raw: Any) -> ToolPolicy:
         raw = {}
     if isinstance(raw, bool):
         return ToolPolicy(name=name, allowed=raw)
+    # Fail fast for malformed YAML so policy mistakes are visible immediately.
+    if not isinstance(raw, dict):
+        raise PolicyLoadError(
+            f"Tool policy for '{name}' must be a mapping or boolean"
+        )
     return ToolPolicy(
         name=name,
         allowed=bool(raw.get("allow", False)),
-        pii_mask=raw.get("pii_mask", []),
+        pii_mask=_normalize_pii_mask(raw.get("pii_mask", []), f"tools.{name}.pii_mask"),
     )
+
+
+def _normalize_pii_mask(value: Any, field_name: str) -> list[str]:
+    # Keep PII config predictable: only lists of string pattern keys are accepted.
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise PolicyLoadError(f"{field_name} must be a list of strings")
+
+    normalized: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            raise PolicyLoadError(f"{field_name} must contain only strings")
+        normalized.append(item)
+    return normalized
 
 
 def _looks_like_pack_name(value: str) -> bool:
@@ -150,12 +170,19 @@ def load_policy(path: Optional[str] = None) -> Policy:
     except yaml.YAMLError as exc:
         raise PolicyLoadError(f"Invalid YAML in policy file: {exc}")
 
-    tools_raw: dict[str, Any] = raw.get("tools", {})
+    tools_raw = raw.get("tools", {})
+    if not isinstance(tools_raw, dict):
+        raise PolicyLoadError("'tools' must be a mapping of tool names to rule configs")
+
     tools = {name: _parse_tool(name, cfg) for name, cfg in tools_raw.items()}
+
+    default_action = raw.get("default_action", "deny")
+    if default_action not in {"allow", "deny"}:
+        raise PolicyLoadError("'default_action' must be either 'allow' or 'deny'")
 
     return Policy(
         version=str(raw.get("version", "1")),
-        default_action=raw.get("default_action", "deny"),
+        default_action=default_action,
         tools=tools,
-        pii_mask=raw.get("pii_mask", []),
+        pii_mask=_normalize_pii_mask(raw.get("pii_mask", []), "pii_mask"),
     )

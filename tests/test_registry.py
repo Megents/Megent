@@ -8,7 +8,7 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from megent.exceptions import RegistryVerificationError
+from megent.exceptions import RegistryFetchError, RegistryVerificationError
 from megent.registry import RegistryClient, PolicyPack
 
 
@@ -231,3 +231,15 @@ def test_audit_installed_fails_for_missing_verified_and_sha_mismatch(tmp_path: P
     assert results[0].ok is False
     assert "missing verified marker" in results[0].issues
     assert "lockfile sha256 mismatch" in results[0].issues
+
+
+def test_registry_client_rejects_non_http_scheme() -> None:
+    with pytest.raises(RegistryFetchError, match=r"must use http\(s\)"):
+        RegistryClient(registry_url="file:///tmp/registry")
+
+
+def test_fetch_rejects_policy_name_with_path_characters() -> None:
+    client = RegistryClient(registry_url="https://registry.example/")
+
+    with pytest.raises(RegistryFetchError, match="unsupported characters"):
+        client.fetch("../stripe")

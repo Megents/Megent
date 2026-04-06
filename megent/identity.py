@@ -28,7 +28,11 @@ def verify_agent_token(token: str, secret: Optional[str] = None) -> dict[str, An
     resolved_secret = secret or os.environ.get("MEGENT_JWT_SECRET")
 
     if not _JWT_AVAILABLE:
-        import base64, json, warnings
+        import base64
+        import json
+        import warnings
+
+        # Explicit dev-only escape hatch when PyJWT is unavailable.
         allow_insecure_decode = (
             os.environ.get("MEGENT_ALLOW_INSECURE_TOKEN_DECODE", "").strip().lower()
             in {"1", "true", "yes", "on"}
