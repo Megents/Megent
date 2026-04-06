@@ -18,7 +18,7 @@ Open-source AI agent security middleware for policy-enforced tool calls, prompt 
 [![PyPI](https://img.shields.io/pypi/v/megent)](https://pypi.org/project/megent/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen)](https://megent.dev)
 
-[**Docs**](https://docs.megent.dev) · [**Polices**](https://megent.dev/registry)
+[**Docs**](https://docs.megent.dev) · [**Policies**](https://megent.dev/registry)
 </div>
 
 ---
