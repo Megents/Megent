@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "megent"
-version = "1.2.0"
+version = "0.2.0"
 description = "Open-source AI agent security middleware for policy-enforced tool calls, prompt injection defense, and PII masking"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -56,3 +56,7 @@ include = ["megent*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+
+
+
