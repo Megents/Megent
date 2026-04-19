@@ -1,0 +1,8 @@
+megent: "1.0"
+name: access-control/read-only
+version: 0.1.0
+description: Read-only policy pack
+rules:
+  - id: deny-write
+    tool: "megent:fs.write"
+    action: deny
