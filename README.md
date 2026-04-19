@@ -23,7 +23,7 @@ Open-source AI agent security middleware for policy-enforced tool calls, prompt 
 
 ---
 
-# Megent: Open-Source AI Agent Security Middleware
+# Megent: Open-Source Runtime Policy for AI Agents.
 
 Megent helps secure AI agents by enforcing allow/deny tool policies, masking sensitive data, and logging every tool decision.
 
@@ -33,13 +33,6 @@ Megent helps secure AI agents by enforcing allow/deny tool policies, masking sen
 
 AI agents are calling tools. Most of those calls look harmless. But sequences don't lie.
 
-```
-agent.read_file("/etc/passwd")          ← looks fine
-agent.web_search("paste.bin upload")    ← looks fine  
-agent.http_post("https://...")          ← looks fine
-
-# combined? that's data exfiltration.
-```
 
 Traditional security tools inspect calls one by one. **Megent enforces policy at execution time.**
 
@@ -62,12 +55,6 @@ Megent sits between your agent and its tools, running every call through three p
 │                              allow / deny / modify  │
 └─────────────────────────────────────────────────────┘
 ```
-
-| Primitive | Role |
-|-----------|------|
-| **Intercept** | Hooks into every tool invocation before execution |
-| **Context** | Maintains a behavioral window — the sequence of recent calls |
-| **Judge** | Evaluates the sequence against your policy rules |
 
 ---
 
