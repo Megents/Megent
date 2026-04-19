@@ -29,18 +29,10 @@ def _mask_string(value: str, fields: list[str]) -> tuple[str, list[str]]:
     return value, matched
 
 
-def mask_args(
-    args: dict[str, Any],
-    pii_fields: list[str],
-) -> tuple[dict[str, Any], list[str]]:
-    """
-    Recursively walk tool call arguments and mask any PII.
-
-    Returns:
-        (masked_args, list_of_field_types_that_were_masked)
-    """
+def mask_value(value: Any, pii_fields: list[str]) -> tuple[Any, list[str]]:
+    """Recursively mask a JSON-like value using the configured PII fields."""
     if not pii_fields:
-        return args, []
+        return value, []
 
     all_masked: list[str] = []
 
@@ -53,6 +45,17 @@ def mask_args(
             return {k: _walk(v) for k, v in obj.items()}
         if isinstance(obj, list):
             return [_walk(item) for item in obj]
+        if isinstance(obj, tuple):
+            return tuple(_walk(item) for item in obj)
         return obj
 
-    return _walk(args), list(set(all_masked))
+    return _walk(value), list(set(all_masked))
+
+
+def mask_args(
+    args: dict[str, Any],
+    pii_fields: list[str],
+) -> tuple[dict[str, Any], list[str]]:
+    """Recursively walk tool call arguments and mask any PII."""
+    masked, fields = mask_value(args, pii_fields)
+    return masked, fields

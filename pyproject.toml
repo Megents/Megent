@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "megent"
-version = "0.1.4"
+version = "0.2.0"
 description = "Open-source AI agent security middleware for policy-enforced tool calls, prompt injection defense, and PII masking"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -46,7 +46,7 @@ dev = [
 [project.urls]
 Homepage = "https://megent.dev"
 Repository = "https://github.com/Megents/Megent"
-Documentation = "https://megent.dev/docs"
+Documentation = "https://docs.megent.dev"
 
 [project.scripts]
 megent = "megent.cli:main"
