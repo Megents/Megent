@@ -45,7 +45,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://megent.dev"
-Repository = "https://github.com/Megents/Megent"
+Repository = "https://github.com/Megents"
 Documentation = "https://docs.megent.dev"
 
 [project.scripts]
