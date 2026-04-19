@@ -253,6 +253,31 @@ The platforms (LangChain, CrewAI, OpenAI Agents SDK, AutoGen, LlamaIndex) are wh
 
 ---
 
+## External Policy Repo
+
+Megent does not ship policy packs in this repo anymore. Policy packs live in a separate policy repository, and Megent loads them by `policy_repo` path or `MEGENT_POLICY_REPO`.
+
+Example:
+
+```python
+import megent as mg
+
+runtime = mg.Runtime(
+  policy_name="access-control/read-only",
+  policy_repo=r"C:\Users\dell\Downloads\megent-policies\megent-policies",
+)
+
+combined = mg.compose_policies(
+  "access-control/read-only",
+  "data-protection/pii-strict",
+  policy_repo=r"C:\Users\dell\Downloads\megent-policies\megent-policies",
+)
+```
+
+Policies use direct tool names and simple wildcards such as `*`.
+
+---
+
 ## Threat Coverage
 
 | Attack | Megent Defense |
