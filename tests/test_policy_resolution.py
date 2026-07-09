@@ -98,7 +98,6 @@ def test_load_policy_raises_when_pii_mask_is_not_list(tmp_path: Path) -> None:
 
 
 def test_load_policy_can_resolve_pack_from_external_policy_repo(tmp_path: Path) -> None:
-description: Read only policy
     repo_root = tmp_path / "megent-policies"
     pack_dir = repo_root / "policies" / "access-control" / "read-only"
     pack_dir.mkdir(parents=True, exist_ok=True)

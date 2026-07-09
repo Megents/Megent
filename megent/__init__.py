@@ -22,6 +22,7 @@ from .hitl import HITLPolicy, ReviewOutcome, ReviewRequest, ReviewVerdict, cli_r
 from .identity import verify_agent_token, agent_id_from_token
 from .pii import mask_args
 from .policy import Policy, ToolPolicy, compose_policies, load_policy
+from .ratelimit import RateLimitPolicy, RateLimitReport
 from .registry import PolicyAuditResult, PolicyPack, RegistryClient
 from .runtime import Runtime
 from .stop import GracefulStop, SoftStop, is_stopped
@@ -44,6 +45,8 @@ __all__ = [
     "GracefulStop",
     "HITLPolicy",
     "LoopDetector",
+    "RateLimitPolicy",
+    "RateLimitReport",
     "ReviewOutcome",
     "ReviewRequest",
     "ReviewVerdict",
