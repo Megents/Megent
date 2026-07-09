@@ -9,6 +9,7 @@ from .exceptions import PolicyViolation
 from .identity import agent_id_from_token
 from .pii import mask_args
 from .policy import Policy, load_policy
+from .ratelimit import RateLimitPolicy
 
 
 class Runtime:
@@ -26,6 +27,7 @@ class Runtime:
         policy_name: Optional[str] = None,
         policy_repo: Optional[str] = None,
         audit: Optional[AuditLogger] = None,
+        rate_limit: Optional[RateLimitPolicy] = None,
     ):
         self._policy = policy or load_policy(
             policy_path,
@@ -33,6 +35,7 @@ class Runtime:
             policy_repo=policy_repo,
         )
         self._audit = audit or AuditLogger()
+        self._rate_limit = rate_limit
 
     # ------------------------------------------------------------------
     # Core enforcement
@@ -51,6 +54,23 @@ class Runtime:
         Raises PolicyViolation if the call is blocked.
         """
         agent_id = agent_id_from_token(agent_token)
+
+        # Rate limiting is checked before policy evaluation so a single agent
+        # identity cannot exceed its call budget regardless of the per-tool
+        # decision. A limit hit is a deny-by-default block, logged to audit.
+        if self._rate_limit is not None:
+            rl = self._rate_limit.check(tool_name, args, agent_id)
+            if rl.get("action") == "deny":
+                reason = str(rl.get("reason") or "rate limit exceeded")
+                masked_args, _ = mask_args(args, self._policy.pii_fields_for(tool_name))
+                self._audit.block(
+                    tool=tool_name,
+                    reason=reason,
+                    agent_id=agent_id,
+                    args=masked_args,
+                )
+                raise PolicyViolation(tool_name, reason)
+
         decision = self._policy.evaluate(tool_name, args, agent_id=agent_id)
         action = decision.get("action", "allow")
 

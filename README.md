@@ -183,6 +183,32 @@ safe_send(to="ops@example.com", subject="Ping", body="hello")
 
 ---
 
+## Rate Limiting
+
+Cap how many tool calls a single agent identity can make per time window.
+When the limit is hit, the call is **denied by default** and the block is
+written to the audit trail. Limits are tracked per `agent_id` (the JWT
+identity), falling back to a shared `default` bucket when no token is attached.
+
+```python
+import megent as mg
+
+runtime = mg.Runtime(
+    policy_path="policies/agent.yaml",
+    rate_limit=mg.RateLimitPolicy(max_calls=30, window_seconds=60),
+)
+
+safe_send = mg.wrap(send_email, runtime=runtime, tool_name="send_email", agent_token=token)
+safe_send(to="ops@example.com", subject="Ping", body="hello")  # 31st call in 60s → PolicyViolation
+```
+
+The 31st call within any 60-second window raises `PolicyViolation` and emits a
+`block` audit event. Blocked calls do not count against the window, so a flood
+of denied attempts can't keep pushing the limit forward. Inspect current usage
+with `runtime` via `RateLimitPolicy.report(agent_id)`.
+
+---
+
 ## Audit Log
 
 Every decision is logged in structured JSON.
