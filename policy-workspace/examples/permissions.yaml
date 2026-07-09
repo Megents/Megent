@@ -1,0 +1,36 @@
+# Megent capability-based tool permissions.
+#
+# Deny-by-default: any identity NOT listed here can call NOTHING.
+# Precedence per identity: explicit deny > explicit allow > wildcard > default deny.
+version: 1
+
+identities:
+  # ---- A tightly-scoped agent: only the tools it needs. ----------------
+  billing-agent:
+    tools:
+      read_invoice: true            # shorthand: bare `true` allows with no constraints
+      write_file:
+        allow: true
+        max_args_bytes: 4096        # reject oversized calls
+        path_keys: [path]           # which arg(s) hold filesystem paths
+        allowed_paths:              # each path arg must match one of these globs
+          - "/data/invoices/**"
+    deny:
+      - send_email                  # explicit deny — wins even over a wildcard
+
+  # ---- A broad agent that opts into the wildcard group. ----------------
+  reporting-agent:
+    tools:
+      "*": true                     # wildcard is EXPLICIT opt-in, never implicit
+    deny:
+      - delete_record               # carve-outs still beat the wildcard
+
+  # ---- Wildcard with a shared constraint on every tool. ----------------
+  read-only-agent:
+    tools:
+      "*":
+        allow: true
+        max_args_bytes: 1024
+
+# Note: `agent-with-no-entry` is absent, so it is denied every tool
+# (denial reason: no_policy).

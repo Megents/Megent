@@ -8,6 +8,7 @@ from .audit import AuditLogger
 from .exceptions import PolicyViolation
 from .identity import agent_id_from_token
 from .pii import mask_args
+from .permissions import PermissionStore
 from .policy import Policy, load_policy
 from .ratelimit import RateLimitPolicy
 
@@ -28,6 +29,7 @@ class Runtime:
         policy_repo: Optional[str] = None,
         audit: Optional[AuditLogger] = None,
         rate_limit: Optional[RateLimitPolicy] = None,
+        permissions: Optional[PermissionStore] = None,
     ):
         self._policy = policy or load_policy(
             policy_path,
@@ -36,6 +38,7 @@ class Runtime:
         )
         self._audit = audit or AuditLogger()
         self._rate_limit = rate_limit
+        self._permissions = permissions
 
     # ------------------------------------------------------------------
     # Core enforcement
@@ -68,6 +71,25 @@ class Runtime:
                     reason=reason,
                     agent_id=agent_id,
                     args=masked_args,
+                )
+                raise PolicyViolation(tool_name, reason)
+
+        # Capability permission check runs after the rate limit and before the
+        # existing policy evaluation. Deny-by-default: an identity with no
+        # entry (or a tool outside its allowlist) is blocked. A snapshot is
+        # taken once so a concurrent hot reload cannot half-apply mid-call.
+        if self._permissions is not None:
+            perm = self._permissions.evaluate(agent_id, tool_name, args)
+            if not perm.allowed:
+                reason = perm.detail or "permission denied"
+                masked_args, _ = mask_args(args, self._policy.pii_fields_for(tool_name))
+                self._audit.permission_denied(
+                    tool=tool_name,
+                    denial_reason=perm.reason or "no_policy",
+                    reason=reason,
+                    agent_id=agent_id,
+                    args=masked_args,
+                    policy_version=perm.version,
                 )
                 raise PolicyViolation(tool_name, reason)
 

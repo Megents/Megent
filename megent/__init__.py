@@ -20,6 +20,16 @@ from .awareness import AlertReport, AwarenessGuard, EscalationDetector, Exfiltra
 from .budget import BudgetExceededError, BudgetPolicy, BudgetReport, SessionBudget
 from .hitl import HITLPolicy, ReviewOutcome, ReviewRequest, ReviewVerdict, cli_reviewer, webhook_reviewer
 from .identity import verify_agent_token, agent_id_from_token
+from .permissions import (
+    CompiledPermissions,
+    Decision,
+    PermissionConfigError,
+    PermissionConstraint,
+    PermissionStore,
+    compile_permissions,
+    compile_permissions_text,
+    load_permissions,
+)
 from .pii import mask_args
 from .policy import Policy, ToolPolicy, compose_policies, load_policy
 from .ratelimit import RateLimitPolicy, RateLimitReport
@@ -65,6 +75,15 @@ __all__ = [
     "PolicyPack",
     "PolicyAuditResult",
     "RegistryClient",
+    # Permissions
+    "PermissionStore",
+    "PermissionConstraint",
+    "CompiledPermissions",
+    "Decision",
+    "PermissionConfigError",
+    "compile_permissions",
+    "compile_permissions_text",
+    "load_permissions",
     # PII
     "mask_args",
     # Identity

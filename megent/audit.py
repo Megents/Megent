@@ -11,13 +11,16 @@ logger = logging.getLogger("megent.audit")
 
 @dataclass
 class AuditEvent:
-    event: Literal["allow", "block", "mask"]
+    event: Literal["allow", "block", "mask", "policy-reload-failed"]
     tool: str
     agent_id: Optional[str]
     timestamp: float = field(default_factory=time.time)
     args: dict[str, Any] = field(default_factory=dict)
     reason: Optional[str] = None
     masked_fields: list[str] = field(default_factory=list)
+    # Capability-permission fields. Optional so existing events are unchanged.
+    denial_reason: Optional[str] = None  # no_policy | explicit_deny | constraint_violation
+    policy_version: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -69,5 +72,49 @@ class AuditLogger:
                 agent_id=agent_id,
                 args=args or {},
                 reason=reason,
+            )
+        )
+
+    def permission_denied(
+        self,
+        tool: str,
+        denial_reason: str,
+        reason: str,
+        agent_id: Optional[str] = None,
+        args: dict[str, Any] | None = None,
+        policy_version: Optional[str] = None,
+    ) -> None:
+        """Emit a block event for a capability-permission denial.
+
+        Carries the machine-readable ``denial_reason`` (no_policy |
+        explicit_deny | constraint_violation) and the permission file's
+        version/hash alongside the standard block fields.
+        """
+        self.log(
+            AuditEvent(
+                event="block",
+                tool=tool,
+                agent_id=agent_id,
+                args=args or {},
+                reason=reason,
+                denial_reason=denial_reason,
+                policy_version=policy_version,
+            )
+        )
+
+    def reload_failed(
+        self,
+        path: str,
+        detail: str,
+        policy_version: Optional[str] = None,
+    ) -> None:
+        """Emit a ``policy-reload-failed`` event; the active policy is retained."""
+        self.log(
+            AuditEvent(
+                event="policy-reload-failed",
+                tool=path,
+                agent_id=None,
+                reason=detail,
+                policy_version=policy_version,
             )
         )
