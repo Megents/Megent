@@ -3,12 +3,16 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from pathlib import Path
 from typing import Optional, Sequence
 
-from .exceptions import RegistryError, RegistryVerificationError
+from .exceptions import PolicyLoadError, RegistryError, RegistryVerificationError
+from .policy import load_policy
 from .registry import RegistryClient
 
 DEFAULT_REGISTRY_URL = "https://registry.megent.dev/"
+DEFAULT_POLICY_PATH = "megent.yaml"
+STARTER_POLICY = 'version: "1"\ndefault_action: deny\ntools: {}\n'
 
 
 def _registry_url_from_args(args: argparse.Namespace) -> str:
@@ -21,6 +25,37 @@ def _registry_url_from_args(args: argparse.Namespace) -> str:
 def _client_for_args(args: argparse.Namespace) -> RegistryClient:
     """Build a registry client from parsed CLI arguments."""
     return RegistryClient(registry_url=_registry_url_from_args(args))
+
+
+def _cmd_init(args: argparse.Namespace) -> int:
+    """Create a deny-by-default starter policy without overwriting files."""
+    path = Path(args.path)
+    try:
+        with path.open("x", encoding="utf-8", newline="\n") as policy_file:
+            policy_file.write(STARTER_POLICY)
+    except FileExistsError:
+        print(f"Policy file already exists: {path}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print(f"Could not create policy file '{path}': {exc}", file=sys.stderr)
+        return 1
+
+    print(f"Created deny-by-default policy at '{path}'.")
+    return 0
+
+
+def _cmd_validate(args: argparse.Namespace) -> int:
+    """Load a policy file and report its effective structure."""
+    try:
+        policy = load_policy(args.path)
+    except PolicyLoadError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+    print(f"Policy '{args.path}' is valid.")
+    print(f"Default action: {policy.default_action}")
+    print(f"Tools: {len(policy.tools)}; rules: {len(policy.rules)}")
+    return 0
 
 
 def _cmd_policy_install(args: argparse.Namespace) -> int:
@@ -107,6 +142,22 @@ def build_parser() -> argparse.ArgumentParser:
     """Build and return the Megent CLI argument parser."""
     parser = argparse.ArgumentParser(prog="megent")
     subcommands = parser.add_subparsers(dest="command", required=True)
+
+    init_parser = subcommands.add_parser(
+        "init", help="Create a deny-by-default starter policy"
+    )
+    init_parser.add_argument(
+        "path", nargs="?", default=DEFAULT_POLICY_PATH, help="Policy file path"
+    )
+    init_parser.set_defaults(handler=_cmd_init)
+
+    validate_parser = subcommands.add_parser(
+        "validate", help="Validate a local policy file"
+    )
+    validate_parser.add_argument(
+        "path", nargs="?", default=DEFAULT_POLICY_PATH, help="Policy file path"
+    )
+    validate_parser.set_defaults(handler=_cmd_validate)
 
     policy_parser = subcommands.add_parser("policy", help="Manage policy packs")
     policy_parser.add_argument(

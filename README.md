@@ -64,6 +64,19 @@ Megent sits between your agent and its tools, running every call through three p
 pip install megent
 ```
 
+### CLI
+
+Create a deny-by-default policy file, then validate it before using it:
+
+```bash
+megent init                 # creates megent.yaml; never overwrites an existing file
+megent validate             # validates megent.yaml
+megent validate path/to/policy.yaml
+```
+
+Manage signed policy packs with `megent policy install`, `list`, `verify`,
+`remove`, and `audit`. Use `megent policy --help` for options.
+
 ---
 
 ## Super Simple Setup (3 Steps)

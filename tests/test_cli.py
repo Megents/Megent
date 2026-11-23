@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from megent.cli import main
+from megent.cli import DEFAULT_POLICY_PATH, STARTER_POLICY, main
 from megent.exceptions import RegistryVerificationError
 
 
@@ -101,3 +101,41 @@ def test_cli_policy_audit_returns_one_when_any_row_fails(
 
     exit_code = main(["policy", "audit"])
     assert exit_code == 1
+
+
+def test_cli_init_creates_deny_by_default_policy(tmp_path) -> None:
+    policy_path = tmp_path / DEFAULT_POLICY_PATH
+
+    assert main(["init", str(policy_path)]) == 0
+    assert policy_path.read_text(encoding="utf-8") == STARTER_POLICY
+
+
+def test_cli_init_does_not_overwrite_existing_policy(tmp_path, capsys) -> None:
+    policy_path = tmp_path / DEFAULT_POLICY_PATH
+    policy_path.write_text("default_action: allow\n", encoding="utf-8")
+
+    assert main(["init", str(policy_path)]) == 1
+    assert policy_path.read_text(encoding="utf-8") == "default_action: allow\n"
+    assert "already exists" in capsys.readouterr().err
+
+
+def test_cli_validate_reports_policy_summary(tmp_path, capsys) -> None:
+    policy_path = tmp_path / DEFAULT_POLICY_PATH
+    policy_path.write_text(
+        'version: "1"\ndefault_action: deny\ntools:\n  send_email:\n    allow: true\n',
+        encoding="utf-8",
+    )
+
+    assert main(["validate", str(policy_path)]) == 0
+    output = capsys.readouterr().out
+    assert "is valid" in output
+    assert "Default action: deny" in output
+    assert "Tools: 1; rules: 0" in output
+
+
+def test_cli_validate_returns_error_for_invalid_policy(tmp_path, capsys) -> None:
+    policy_path = tmp_path / "invalid.yaml"
+    policy_path.write_text("default_action: maybe\n", encoding="utf-8")
+
+    assert main(["validate", str(policy_path)]) == 1
+    assert "default_action" in capsys.readouterr().err
